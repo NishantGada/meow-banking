@@ -24,7 +24,7 @@ def get_customer_by_customer_id(customer_id: str, db: Session = Depends(get_db))
 
 
 @app.post("/customers")
-def create_customer(customer: CustomerCreate, db: Session = Depends(get_db)):
+def create_new_customer(customer: CustomerCreate, db: Session = Depends(get_db)):
     existing = db.query(Customer).filter(Customer.email == customer.email).first()
     if existing:
         return error_response("Email already exists", status_code=400)
