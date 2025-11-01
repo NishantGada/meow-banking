@@ -1,0 +1,23 @@
+from sqlalchemy import Column, String, DECIMAL, ForeignKey, DateTime
+from sqlalchemy.dialects.mysql import CHAR
+from sqlalchemy.orm import relationship
+from datetime import datetime
+import uuid
+
+# local imports
+from config.dbconfig import Base
+
+
+class AccountTransactions(Base):
+    __tablename__ = "account_transactions"
+
+    id = Column(CHAR(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    account_id = Column(CHAR(36), ForeignKey("accounts.id"), nullable=False)
+    transaction_type = Column(String(20), nullable=False)
+    amount = Column(DECIMAL(15, 2), nullable=False)
+    from_account_id = Column(CHAR(36), ForeignKey("accounts.id"), nullable=True)
+    to_account_id = Column(CHAR(36), ForeignKey("accounts.id"), nullable=True)
+    description = Column(String(200))
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    account = relationship("Account", foreign_keys=[account_id])
