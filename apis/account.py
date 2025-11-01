@@ -37,6 +37,7 @@ def get_all_customer_accounts(customer_id: str, db: Session = Depends(get_db)):
     )
 
 
+"""
 @app.get("/accounts/{customer_id}/{account_id}")
 def get_customer_account_by_account_id(
     customer_id: str, account_id: str, db: Session = Depends(get_db)
@@ -55,6 +56,7 @@ def get_customer_account_by_account_id(
     return success_response(
         data=account, message="Account details fetched successfully", status_code=200
     )
+"""
 
 
 @app.post("/accounts")
@@ -82,4 +84,42 @@ def create_account(account: AccountCreate, db: Session = Depends(get_db)):
         },
         message="Account created successfully",
         status_code=201,
+    )
+
+
+@app.get("/accounts/{account_id}/transactions")
+def get_account_transactions(account_id: str, db: Session = Depends(get_db)):
+    account = db.query(Account).filter(Account.id == account_id).first()
+    if not account:
+        return error_response("Account not found", status_code=404)
+    account_balance = float(account.balance)
+
+    transactions = (
+        db.query(AccountTransactions)
+        .filter(AccountTransactions.account_id == account_id)
+        .order_by(AccountTransactions.created_at.desc())
+        .all()
+    )
+
+    if not transactions:
+        return success_response(data=[], message="No transactions found")
+
+    history = [
+        {
+            "id": transaction.id,
+            "transaction_type": transaction.transaction_type,
+            "amount": float(transaction.amount),
+            "description": transaction.description,
+            "created_at": str(transaction.created_at),
+        }
+        for transaction in transactions
+    ]
+
+    return success_response(
+        data={
+            "current_balance": account_balance,
+            "number_of_transactions": len(history),
+            "history": history,
+        },
+        message="Transaction history fetched successfully",
     )
