@@ -1,16 +1,11 @@
 from fastapi import Depends
-from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 # local imports
+from apis.schemas import CustomerCreate
 from config.dbconfig import get_db
 from main import app
 from models.customer import Customer
-
-
-class CustomerCreate(BaseModel):
-    email: str
-    password: str
 
 
 @app.get("/customers/{customer_id}")
