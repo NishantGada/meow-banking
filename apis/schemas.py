@@ -10,3 +10,9 @@ class AccountCreate(BaseModel):
     customer_id: str
     initial_deposit: float
     account_type: str = "checking"
+
+
+class TransferCreate(BaseModel):
+    from_account_id: str
+    to_account_id: str
+    amount: float
