@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from decimal import Decimal
 
 # local imports
+from apis.helper_functions.validate_account_status import validate_account_status
 from main import app
 from apis.helper_functions.response import error_response, success_response
 from apis.schemas import TransferCreate
@@ -56,18 +57,30 @@ def transfer_money(from_account_id, to_account_id, amount, db):
 
 @app.post("/transfer")
 def transfer(transfer: TransferCreate, db: Session = Depends(get_db)):
-    from_account = (db.query(Account).filter(Account.id == transfer.from_account_id).first())
+    from_account = (
+        db.query(Account).filter(Account.id == transfer.from_account_id).first()
+    )
     if not from_account:
         return error_response("Source acount not found", status_code=404)
+
+    error = validate_account_status(from_account)
+    if error:
+        return error
 
     to_account = db.query(Account).filter(Account.id == transfer.to_account_id).first()
     if not to_account:
         return error_response("Destination acount not found", status_code=404)
 
+    error = validate_account_status(to_account)
+    if error:
+        return error
+
     if from_account.balance < transfer.amount:
         return error_response("Insufficient balance", status_code=400)
 
-    transfer_money(transfer.from_account_id, transfer.to_account_id, transfer.amount, db)
+    transfer_money(
+        transfer.from_account_id, transfer.to_account_id, transfer.amount, db
+    )
 
     return success_response(
         data={

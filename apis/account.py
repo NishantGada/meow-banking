@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 # local imports
 from apis.helper_functions.generate_account_number import generate_account_number
 from apis.helper_functions.response import success_response, error_response
+from apis.helper_functions.validate_account_status import validate_account_status
 from apis.schemas import AccountCreate, AccountUpdate
 from apis.transfer import deposit_money
 from config.dbconfig import get_db
@@ -156,6 +157,10 @@ def update_account(
     account = db.query(Account).filter(Account.id == account_id).first()
     if not account:
         return error_response("Account not found", status_code=404)
+
+    error = validate_account_status(account)
+    if error:
+        return error
 
     account.account_type = account_data.account_type
     db.commit()
