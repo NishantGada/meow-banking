@@ -75,9 +75,8 @@ def create_new_customer(customer: CustomerCreate, db: Session = Depends(get_db))
 def update_customer(
     customer_id: str, customer_data: CustomerUpdate, db: Session = Depends(get_db)
 ):
-    print("customer_data: ", customer_data)
-    if customer_data.email == None:
-        return error_response("Invalid request body", status_code=404)
+    if not customer_data.email:
+        return error_response("Invalid request body", status_code=400)
 
     customer = db.query(Customer).filter(Customer.id == customer_id).first()
     if not customer:
@@ -107,7 +106,7 @@ def update_customer_password(
 ):
     customer = db.query(Customer).filter(Customer.id == customer_id).first()
     if not customer:
-        return error_response("Customer not found", status_code=404)
+        return error_response("Customer not found", status_code=400)
 
     if not verify_password(request_body.current_password, customer.password):
         return error_response("Incorrect password", status_code=400)
