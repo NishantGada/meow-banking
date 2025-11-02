@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 import uuid
 
 # local imports
+from apis.helper_functions.check_if_customer_exists import check_if_customer_exists
 from apis.helper_functions.response import success_response, error_response
 from apis.helper_functions.secure_password import hash_password, verify_password
 from apis.schemas import CustomerCreate, CustomerUpdate, PasswordUpdate
@@ -14,11 +15,11 @@ from models.customer import Customer
 
 
 @app.get("/customers/{customer_id}")
-def get_customer_by_customer_id(customer_id: str, db: Session = Depends(get_db)):
+def get_customer_by_customer_id(customer_id: uuid.UUID, db: Session = Depends(get_db)):
     try:
-        customer = db.query(Customer).filter(Customer.id == customer_id).first()
-        if not customer:
-            return error_response("Customer not found", status_code=404)
+        customer, error = check_if_customer_exists(str(customer_id), db)
+        if error:
+            return error
 
         return success_response(
             data={
@@ -31,7 +32,9 @@ def get_customer_by_customer_id(customer_id: str, db: Session = Depends(get_db))
         )
     except Exception as e:
         log_error(
-            "get_customer_by_customer_id failed", customer_id=customer_id, error=str(e)
+            "get_customer_by_customer_id failed",
+            customer_id=str(customer_id),
+            error=str(e),
         )
         return error_response("Internal server error", status_code=500)
 
@@ -41,9 +44,9 @@ def get_customer_account_by_account_id(
     customer_id: uuid.UUID, account_id: uuid.UUID, db: Session = Depends(get_db)
 ):
     try:
-        customer = db.query(Customer).filter(Customer.id == str(customer_id)).first()
-        if not customer:
-            return error_response(message="Customer not found", status_code=404)
+        customer, error = check_if_customer_exists(str(customer_id), db)
+        if error:
+            return error
 
         account = db.query(Account).filter(Account.id == str(account_id)).first()
         if not account:
@@ -132,15 +135,15 @@ def create_new_customer(customer: CustomerCreate, db: Session = Depends(get_db))
 
 @app.put("/customers/{customer_id}")
 def update_customer(
-    customer_id: str, customer_data: CustomerUpdate, db: Session = Depends(get_db)
+    customer_id: uuid.UUID, customer_data: CustomerUpdate, db: Session = Depends(get_db)
 ):
     try:
         if not customer_data.email:
             return error_response("Invalid request body", status_code=400)
 
-        customer = db.query(Customer).filter(Customer.id == customer_id).first()
-        if not customer:
-            return error_response("Customer not found", status_code=404)
+        customer, error = check_if_customer_exists(str(customer_id), db)
+        if error:
+            return error
 
         if customer_data.email:
             existing = (
@@ -162,18 +165,18 @@ def update_customer(
         )
     except Exception as e:
         db.rollback()
-        log_error("update_customer failed", customer_data=customer_data, error=str(e))
+        log_error("update_customer failed", customer_id=str(customer_id), error=str(e))
         return error_response("Internal server error", status_code=500)
 
 
 @app.put("/customers/{customer_id}/password")
 def update_customer_password(
-    customer_id: str, request_body: PasswordUpdate, db: Session = Depends(get_db)
+    customer_id: uuid.UUID, request_body: PasswordUpdate, db: Session = Depends(get_db)
 ):
     try:
-        customer = db.query(Customer).filter(Customer.id == customer_id).first()
-        if not customer:
-            return error_response("Customer not found", status_code=400)
+        customer, error = check_if_customer_exists(str(customer_id), db)
+        if error:
+            return error
 
         if not verify_password(request_body.current_password, customer.password):
             return error_response("Incorrect password", status_code=400)
@@ -188,17 +191,19 @@ def update_customer_password(
     except Exception as e:
         db.rollback()
         log_error(
-            "update_customer_password failed", request_body=request_body, error=str(e)
+            "update_customer_password failed",
+            customer_id=str(customer_id),
+            error=str(e),
         )
         return error_response("Internal server error", status_code=500)
 
 
 @app.delete("/customers/{customer_id}")
-def delete_customer(customer_id: str, db: Session = Depends(get_db)):
+def delete_customer(customer_id: uuid.UUID, db: Session = Depends(get_db)):
     try:
-        customer = db.query(Customer).filter(Customer.id == customer_id).first()
-        if not customer:
-            return error_response("Customer not found", status_code=404)
+        customer, error = check_if_customer_exists(str(customer_id), db)
+        if error:
+            return error
 
         # Checking if the customer has any accounts
         accounts = db.query(Account).filter(Account.customer_id == customer_id).first()
@@ -213,5 +218,5 @@ def delete_customer(customer_id: str, db: Session = Depends(get_db)):
         return success_response(data=None, message="Customer deleted successfully")
     except Exception as e:
         db.rollback()
-        log_error("delete_customer failed", customer_id=customer_id, error=str(e))
+        log_error("delete_customer failed", customer_id=str(customer_id), error=str(e))
         return error_response("Internal server error", status_code=500)
