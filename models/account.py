@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DECIMAL, ForeignKey, DateTime
+from sqlalchemy import Column, String, DECIMAL, ForeignKey, DateTime, Enum
 from sqlalchemy.dialects.mysql import CHAR
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -22,7 +22,10 @@ class Account(Base):
     customer_id = Column(CHAR(36), ForeignKey("customers.id"), nullable=False)
     balance = Column(DECIMAL(15, 2), nullable=False, default=0.00)
     account_type = Column(String(20), default="checking")
-    status = Column(String(20), default="active")
+    status = Column(
+        Enum(AccountStatusEnum, values_callable=lambda x: [e.value for e in x]),
+        default=AccountStatusEnum.ACTIVE,
+    )
     created_at = Column(DateTime, default=datetime.utcnow)
 
     customer = relationship("Customer", back_populates="accounts")
