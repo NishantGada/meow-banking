@@ -8,7 +8,6 @@ class CustomerCreate(BaseModel):
 
 class CustomerUpdate(BaseModel):
     email: str | None = None
-    password: str | None = None
 
 
 class AccountCreate(BaseModel):
@@ -25,3 +24,11 @@ class TransferCreate(BaseModel):
     from_account_id: str
     to_account_id: str
     amount: float
+
+
+class PasswordUpdate(BaseModel):
+    current_password: str
+    new_password: str
+
+    class Config:
+        extra = "forbid"
