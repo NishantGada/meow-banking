@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 
 # local imports
 from apis.helper_functions.response import success_response, error_response
-from apis.schemas import CustomerCreate, CustomerUpdate
+from apis.helper_functions.secure_password import hash_password, verify_password
+from apis.schemas import CustomerCreate, CustomerUpdate, PasswordUpdate
 from config.dbconfig import get_db
 from main import app
 from models.account import Account
@@ -55,7 +56,11 @@ def create_new_customer(customer: CustomerCreate, db: Session = Depends(get_db))
     if existing:
         return error_response("Email already exists", status_code=400)
 
-    new_customer = Customer(email=customer.email, password=customer.password)
+    print("customer.password: ", customer.password)
+    new_customer = Customer(
+        email=customer.email, password=hash_password(customer.password)
+    )
+
     db.add(new_customer)
     db.commit()
     db.refresh(new_customer)
@@ -72,7 +77,7 @@ def update_customer(
     customer_id: str, customer_data: CustomerUpdate, db: Session = Depends(get_db)
 ):
     print("customer_data: ", customer_data)
-    if customer_data.email == None and customer_data.password == None:
+    if customer_data.email == None:
         return error_response("Invalid request body", status_code=404)
 
     customer = db.query(Customer).filter(Customer.id == customer_id).first()
@@ -89,8 +94,25 @@ def update_customer(
             return error_response("Email already exists", status_code=409)
         customer.email = customer_data.email
 
-    if customer_data.password:
-        customer.password = customer_data.password
+    db.commit()
+
+    return success_response(
+        data={"id": customer.id, "email": customer.email},
+        message="Password updated successfully",
+    )
+
+
+@app.put("/customers/{customer_id}/password")
+def update_customer_password(
+    customer_id: str, request_body: PasswordUpdate, db: Session = Depends(get_db)
+):
+    customer = db.query(Customer).filter(Customer.id == customer_id).first()
+    if not customer:
+        return error_response("Customer not found", status_code=404)
+
+    if not verify_password(request_body.current_password, customer.password):
+        return error_response("Incorrect password", status_code=400)
+    customer.password = hash_password(request_body.new_password)
 
     db.commit()
 
