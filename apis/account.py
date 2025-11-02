@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 import uuid
 
 # local imports
+from apis.helper_functions.check_if_account_exists import check_if_account_exists
+from apis.helper_functions.check_if_customer_exists import check_if_customer_exists
 from apis.helper_functions.generate_account_number import generate_account_number
 from apis.helper_functions.response import success_response, error_response
 from apis.helper_functions.validate_account_status import validate_account_status
@@ -19,9 +21,9 @@ from models.transaction import AccountTransactions
 @app.get("/accounts/{customer_id}/all")
 def get_all_customer_accounts(customer_id: uuid.UUID, db: Session = Depends(get_db)):
     try:
-        customer = db.query(Customer).filter(Customer.id == str(customer_id)).first()
-        if not customer:
-            return error_response(message="Customer doesn't exist", status_code=404)
+        customer, error = check_if_customer_exists(str(customer_id), db)
+        if error:
+            return error
 
         accounts = (
             db.query(Account).filter(Account.customer_id == str(customer_id)).all()
@@ -63,10 +65,9 @@ def get_all_customer_accounts(customer_id: uuid.UUID, db: Session = Depends(get_
 @app.get("/accounts/{account_id}")
 def get_account_by_account_id(account_id: uuid.UUID, db: Session = Depends(get_db)):
     try:
-        account = db.query(Account).filter(Account.id == str(account_id)).first()
-
-        if not account:
-            return error_response(message="Account not found", status_code=404)
+        account, error = check_if_account_exists(str(account_id), db)
+        if error:
+            return error
 
         return success_response(
             data={
@@ -89,11 +90,9 @@ def get_account_by_account_id(account_id: uuid.UUID, db: Session = Depends(get_d
 @app.post("/accounts")
 def create_account(account: AccountCreate, db: Session = Depends(get_db)):
     try:
-        customer = (
-            db.query(Customer).filter(Customer.id == str(account.customer_id)).first()
-        )
-        if not customer:
-            return error_response("Customer not found", status_code=404)
+        customer, error = check_if_customer_exists(str(account.customer_id), db)
+        if error:
+            return error
 
         new_account = Account(
             account_number=generate_account_number(),
@@ -128,9 +127,9 @@ def create_account(account: AccountCreate, db: Session = Depends(get_db)):
 @app.get("/accounts/{account_id}/transactions")
 def get_account_transactions(account_id: uuid.UUID, db: Session = Depends(get_db)):
     try:
-        account = db.query(Account).filter(Account.id == str(account_id)).first()
-        if not account:
-            return error_response("Account not found", status_code=404)
+        account, error = check_if_account_exists(str(account_id), db)
+        if error:
+            return error
         account_balance = float(account.balance)
 
         transactions = (
@@ -180,9 +179,9 @@ def update_account(
         if not update_request_body.account_type:
             return error_response("Account type required", status_code=400)
 
-        account = db.query(Account).filter(Account.id == str(account_id)).first()
-        if not account:
-            return error_response("Account not found", status_code=404)
+        account, error = check_if_account_exists(str(account_id), db)
+        if error:
+            return error
 
         error = validate_account_status(account)
         if error:
@@ -210,9 +209,9 @@ def update_account(
 @app.put("/accounts/{account_id}/close")
 def close_account(account_id: uuid.UUID, db: Session = Depends(get_db)):
     try:
-        account = db.query(Account).filter(Account.id == str(account_id)).first()
-        if not account:
-            return error_response("Account not found", status_code=404)
+        account, error = check_if_account_exists(str(account_id), db)
+        if error:
+            return error
 
         if account.status == AccountStatusEnum.CLOSED:
             return error_response("Account already closed", status_code=400)
@@ -238,9 +237,9 @@ def close_account(account_id: uuid.UUID, db: Session = Depends(get_db)):
 @app.put("/accounts/{account_id}/reactivate")
 def reactivate_account(account_id: uuid.UUID, db: Session = Depends(get_db)):
     try:
-        account = db.query(Account).filter(Account.id == str(account_id)).first()
-        if not account:
-            return error_response("Account not found", status_code=404)
+        account, error = check_if_account_exists(str(account_id), db)
+        if error:
+            return error
 
         if account.status == AccountStatusEnum.ACTIVE:
             return error_response("Account already active", status_code=400)
