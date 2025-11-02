@@ -13,7 +13,7 @@ def log_info(message, **kwargs):
         "timestamp": datetime.now().isoformat(),
         "level": "info",
         "event": message,
-        **kwargs,
+        "data": {**kwargs},
     }
     logging.info(json.dumps(log_data, indent=2))
 
@@ -23,7 +23,7 @@ def log_error(message, **kwargs):
         "timestamp": datetime.now().isoformat(),
         "level": "error",
         "event": message,
-        **kwargs,
+        "data": {**kwargs},
     }
     logging.error(json.dumps(log_data, indent=2))
 
@@ -33,6 +33,6 @@ def log_warning(message, **kwargs):
         "timestamp": datetime.now().isoformat(),
         "level": "warning",
         "event": message,
-        **kwargs,
+        "data": {**kwargs},
     }
     logging.warning(json.dumps(log_data, indent=2))
