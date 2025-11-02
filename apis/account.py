@@ -3,11 +3,9 @@ from sqlalchemy.orm import Session
 import uuid
 
 # local imports
-from apis.helper_functions.check_if_account_exists import check_if_account_exists
-from apis.helper_functions.check_if_customer_exists import check_if_customer_exists
-from apis.helper_functions.generate_account_number import generate_account_number
+from apis.helper_functions.account_helpers import check_if_account_exists, generate_account_number, validate_account_status
+from apis.helper_functions.customer_helpers import check_if_customer_exists
 from apis.helper_functions.response import success_response, error_response
-from apis.helper_functions.validate_account_status import validate_account_status
 from apis.schemas import AccountCreate, AccountUpdate
 from apis.transfer import deposit_money
 from config.dbconfig import get_db

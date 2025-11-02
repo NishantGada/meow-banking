@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from decimal import Decimal
 
 # local imports
-from apis.helper_functions.validate_account_status import validate_account_status
+from apis.helper_functions.account_helpers import validate_account_status
 from config.logging_config import log_info
 from main import app
 from apis.helper_functions.response import error_response, success_response

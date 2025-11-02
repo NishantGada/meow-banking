@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 import uuid
 
 # local imports
-from apis.helper_functions.check_if_customer_exists import check_if_customer_exists
+from apis.helper_functions.customer_helpers import check_if_customer_exists
 from apis.helper_functions.response import success_response, error_response
 from apis.helper_functions.secure_password import hash_password, verify_password
 from apis.schemas import CustomerCreate, CustomerUpdate, PasswordUpdate
