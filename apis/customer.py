@@ -161,7 +161,7 @@ def update_customer(
 
         return success_response(
             data={"id": customer.id, "email": customer.email},
-            message="Password updated successfully",
+            message="Email updated successfully",
         )
     except Exception as e:
         db.rollback()
