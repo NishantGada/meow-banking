@@ -76,7 +76,7 @@ def get_account_by_account_id(account_id: uuid.UUID, db: Session = Depends(get_d
                 "account_type": account.account_type,
                 "status": account.status.value,
             },
-            message="Successfully fetched all customer accounts",
+            message="Successfully fetched account details",
             status_code=200,
         )
     except Exception as e:
@@ -88,135 +88,176 @@ def get_account_by_account_id(account_id: uuid.UUID, db: Session = Depends(get_d
 
 @app.post("/accounts")
 def create_account(account: AccountCreate, db: Session = Depends(get_db)):
-    customer = db.query(Customer).filter(Customer.id == account.customer_id).first()
-    if not customer:
-        return error_response("Customer not found", status_code=404)
+    try:
+        customer = (
+            db.query(Customer).filter(Customer.id == str(account.customer_id)).first()
+        )
+        if not customer:
+            return error_response("Customer not found", status_code=404)
 
-    new_account = Account(
-        account_number=generate_account_number(),
-        customer_id=account.customer_id,
-        balance=account.initial_deposit,
-        account_type=account.account_type,
-    )
-    db.add(new_account)
-    db.flush()
+        new_account = Account(
+            account_number=generate_account_number(),
+            customer_id=account.customer_id,
+            balance=account.initial_deposit,
+            account_type=account.account_type,
+        )
+        db.add(new_account)
+        db.flush()
 
-    deposit_money(new_account.id, account.initial_deposit, "Initial deposit", db)
+        deposit_money(
+            new_account.id, account.initial_deposit, db, description="Initial deposit"
+        )
 
-    return success_response(
-        data={
-            "account_id": new_account.id,
-            "account_number": new_account.account_number,
-            "balance": float(new_account.balance),
-        },
-        message="Account created successfully",
-        status_code=201,
-    )
+        return success_response(
+            data={
+                "account_id": new_account.id,
+                "account_number": new_account.account_number,
+                "balance": float(new_account.balance),
+            },
+            message="Account created successfully",
+            status_code=201,
+        )
+    except Exception as e:
+        db.rollback()
+        log_error(
+            "create_account failed", customer_id=str(account.customer_id), error=str(e)
+        )
+        return error_response("Internal server error", status_code=500)
 
 
 @app.get("/accounts/{account_id}/transactions")
-def get_account_transactions(account_id: str, db: Session = Depends(get_db)):
-    account = db.query(Account).filter(Account.id == account_id).first()
-    if not account:
-        return error_response("Account not found", status_code=404)
-    account_balance = float(account.balance)
+def get_account_transactions(account_id: uuid.UUID, db: Session = Depends(get_db)):
+    try:
+        account = db.query(Account).filter(Account.id == str(account_id)).first()
+        if not account:
+            return error_response("Account not found", status_code=404)
+        account_balance = float(account.balance)
 
-    transactions = (
-        db.query(AccountTransactions)
-        .filter(AccountTransactions.account_id == account_id)
-        .order_by(AccountTransactions.created_at.desc())
-        .all()
-    )
+        transactions = (
+            db.query(AccountTransactions)
+            .filter(AccountTransactions.account_id == str(account_id))
+            .order_by(AccountTransactions.created_at.desc())
+            .all()
+        )
 
-    if not transactions:
-        return success_response(data=[], message="No transactions found")
+        if not transactions:
+            return success_response(data=[], message="No transactions found")
 
-    history = [
-        {
-            "id": transaction.id,
-            "transaction_type": transaction.transaction_type.value,
-            "amount": float(transaction.amount),
-            "description": transaction.description,
-            "created_at": str(transaction.created_at),
-        }
-        for transaction in transactions
-    ]
+        history = [
+            {
+                "id": transaction.id,
+                "transaction_type": transaction.transaction_type.value,
+                "amount": float(transaction.amount),
+                "description": transaction.description,
+                "created_at": str(transaction.created_at),
+            }
+            for transaction in transactions
+        ]
 
-    return success_response(
-        data={
-            "current_balance": account_balance,
-            "number_of_transactions": len(history),
-            "history": history,
-        },
-        message="Transaction history fetched successfully",
-    )
+        return success_response(
+            data={
+                "current_balance": account_balance,
+                "number_of_transactions": len(history),
+                "history": history,
+            },
+            message="Transaction history fetched successfully",
+        )
+    except Exception as e:
+        db.rollback()
+        log_error(
+            "get_account_transactions failed", account_id=str(account_id), error=str(e)
+        )
+        return error_response("Internal server error", status_code=500)
 
 
 @app.put("/accounts/{account_id}")
 def update_account(
-    account_id: str, account_data: AccountUpdate, db: Session = Depends(get_db)
+    account_id: uuid.UUID,
+    update_request_body: AccountUpdate,
+    db: Session = Depends(get_db),
 ):
-    if not account_data.account_type:
-        return error_response("Account type required", status_code=400)
+    try:
+        if not update_request_body.account_type:
+            return error_response("Account type required", status_code=400)
 
-    account = db.query(Account).filter(Account.id == account_id).first()
-    if not account:
-        return error_response("Account not found", status_code=404)
+        account = db.query(Account).filter(Account.id == str(account_id)).first()
+        if not account:
+            return error_response("Account not found", status_code=404)
 
-    error = validate_account_status(account)
-    if error:
-        return error
+        error = validate_account_status(account)
+        if error:
+            return error
 
-    account.account_type = account_data.account_type
-    db.commit()
+        if account.account_type == update_request_body.account_type:
+            return error_response(
+                message=f"Account type is already - `{update_request_body.account_type}`",
+                status_code=400,
+            )
 
-    return success_response(
-        data={"account_id": account.id, "account_type": account.account_type},
-        message="Account updated successfully",
-    )
+        account.account_type = update_request_body.account_type
+        db.commit()
+
+        return success_response(
+            data={"account_id": account.id, "account_type": account.account_type},
+            message="Account updated successfully",
+        )
+    except Exception as e:
+        db.rollback()
+        log_error("update_account failed", account_id=str(account_id), error=str(e))
+        return error_response("Internal server error", status_code=500)
 
 
 @app.put("/accounts/{account_id}/close")
-def close_account(account_id: str, db: Session = Depends(get_db)):
-    account = db.query(Account).filter(Account.id == account_id).first()
-    if not account:
-        return error_response("Account not found", status_code=404)
+def close_account(account_id: uuid.UUID, db: Session = Depends(get_db)):
+    try:
+        account = db.query(Account).filter(Account.id == str(account_id)).first()
+        if not account:
+            return error_response("Account not found", status_code=404)
 
-    if account.status == AccountStatusEnum.CLOSED.value:
-        return error_response("Account already closed", status_code=400)
+        if account.status == AccountStatusEnum.CLOSED:
+            return error_response("Account already closed", status_code=400)
 
-    if account.balance != 0:
-        return error_response(
-            "Cannot close account with non-zero balance", status_code=400
+        if account.balance != 0:
+            return error_response(
+                "Cannot close account with non-zero balance", status_code=400
+            )
+
+        account.status = AccountStatusEnum.CLOSED.value
+        db.commit()
+
+        return success_response(
+            data={"account_id": account.id, "status": account.status.value},
+            message="Account closed successfully",
         )
-
-    account.status = AccountStatusEnum.CLOSED.value
-    db.commit()
-
-    return success_response(
-        data={"account_id": account.id, "status": account.status},
-        message="Account closed successfully",
-    )
+    except Exception as e:
+        db.rollback()
+        log_error("close_account failed", account_id=str(account_id), error=str(e))
+        return error_response("Internal server error", status_code=500)
 
 
 @app.put("/accounts/{account_id}/reactivate")
-def reactivate_account(account_id: str, db: Session = Depends(get_db)):
-    account = db.query(Account).filter(Account.id == account_id).first()
-    if not account:
-        return error_response("Account not found", status_code=404)
+def reactivate_account(account_id: uuid.UUID, db: Session = Depends(get_db)):
+    try:
+        account = db.query(Account).filter(Account.id == str(account_id)).first()
+        if not account:
+            return error_response("Account not found", status_code=404)
 
-    if account.status == AccountStatusEnum.ACTIVE.value:
-        return error_response("Account already active", status_code=400)
+        if account.status == AccountStatusEnum.ACTIVE:
+            return error_response("Account already active", status_code=400)
 
-    if account.balance != 0:
-        return error_response(
-            "Cannot re-activate account with non-zero balance", status_code=400
+        if account.balance != 0:
+            return error_response(
+                "Cannot re-activate account with non-zero balance", status_code=400
+            )
+
+        account.status = AccountStatusEnum.ACTIVE.value
+        db.commit()
+
+        return success_response(
+            data={"account_id": account.id, "status": account.status.value},
+            message="Account re-activated successfully",
         )
-
-    account.status = AccountStatusEnum.ACTIVE.value
-    db.commit()
-
-    return success_response(
-        data={"account_id": account.id, "status": account.status},
-        message="Account re-activated successfully",
-    )
+    except Exception as e:
+        db.rollback()
+        log_error("reactivate_account failed", account_id=str(account_id), error=str(e))
+        return error_response("Internal server error", status_code=500)

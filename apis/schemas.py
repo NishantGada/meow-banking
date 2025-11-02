@@ -1,3 +1,4 @@
+import uuid
 from pydantic import BaseModel
 from uuid import UUID
 
@@ -12,7 +13,7 @@ class CustomerUpdate(BaseModel):
 
 
 class AccountCreate(BaseModel):
-    customer_id: str
+    customer_id: uuid.UUID
     initial_deposit: float
     account_type: str = "checking"
 
