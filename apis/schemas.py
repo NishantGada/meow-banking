@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from uuid import UUID
 
 
 class CustomerCreate(BaseModel):
@@ -32,3 +33,17 @@ class PasswordUpdate(BaseModel):
 
     class Config:
         extra = "forbid"
+
+
+class WithdrawSchema(BaseModel):
+    # user_id: UUID
+    user_id: str
+    account_id: str
+    amount: float
+
+
+class DepositSchema(BaseModel):
+    # user_id: UUID
+    user_id: str
+    account_id: str
+    amount: float
