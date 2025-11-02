@@ -1,11 +1,18 @@
-from sqlalchemy import Column, String, DECIMAL, ForeignKey, DateTime
+from sqlalchemy import Column, Enum, String, DECIMAL, ForeignKey, DateTime
 from sqlalchemy.dialects.mysql import CHAR
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
+import enum
 
 # local imports
 from config.dbconfig import Base
+
+
+class TransactionTypeEnum(enum.Enum):
+    TRANSFER = "transfer"
+    DEPOSIT = "deposit"
+    WITHDRAW = "withdraw"
 
 
 class AccountTransactions(Base):
@@ -13,7 +20,10 @@ class AccountTransactions(Base):
 
     id = Column(CHAR(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     account_id = Column(CHAR(36), ForeignKey("accounts.id"), nullable=False)
-    transaction_type = Column(String(20), nullable=False)
+    transaction_type = Column(
+        Enum(TransactionTypeEnum, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+    )
     amount = Column(DECIMAL(15, 2), nullable=False)
     from_account_id = Column(CHAR(36), ForeignKey("accounts.id"), nullable=True)
     to_account_id = Column(CHAR(36), ForeignKey("accounts.id"), nullable=True)
