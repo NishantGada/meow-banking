@@ -3,9 +3,15 @@ from sqlalchemy.dialects.mysql import CHAR
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
+import enum
 
 # local imports
 from config.dbconfig import Base
+
+
+class AccountStatusEnum(enum.Enum):
+    ACTIVE = "active"
+    CLOSED = "closed"
 
 
 class Account(Base):
@@ -16,6 +22,7 @@ class Account(Base):
     customer_id = Column(CHAR(36), ForeignKey("customers.id"), nullable=False)
     balance = Column(DECIMAL(15, 2), nullable=False, default=0.00)
     account_type = Column(String(20), default="checking")
+    status = Column(String(20), default="active")
     created_at = Column(DateTime, default=datetime.utcnow)
 
     customer = relationship("Customer", back_populates="accounts")
