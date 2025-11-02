@@ -9,6 +9,7 @@ from config.dbconfig import get_db
 from main import app
 from models.account import Account
 from models.customer import Customer
+from config.logging_config import log_info
 
 
 @app.get("/customers/{customer_id}")
@@ -27,8 +28,10 @@ def get_customer_by_customer_id(customer_id: str, db: Session = Depends(get_db))
 
 @app.get("/customers")
 def get_all_customers(db: Session = Depends(get_db)):
+    log_info("get_all_customers:: fetching all customers")
     customers = db.query(Customer).all()
 
+    log_info("get_all_customers:: creating the customers array/list to be returned")
     all_customers = [
         {
             "id": customer.id,
@@ -40,6 +43,7 @@ def get_all_customers(db: Session = Depends(get_db)):
         for customer in customers
     ]
 
+    log_info("get_all_customers:: returning 200 success response")
     return success_response(
         data={
             "number_of_customers": len(all_customers),
