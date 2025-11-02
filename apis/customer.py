@@ -1,5 +1,6 @@
 from fastapi import Depends
 from sqlalchemy.orm import Session
+import uuid
 
 # local imports
 from apis.helper_functions.response import success_response, error_response
@@ -31,6 +32,45 @@ def get_customer_by_customer_id(customer_id: str, db: Session = Depends(get_db))
     except Exception as e:
         log_error(
             "get_customer_by_customer_id failed", customer_id=customer_id, error=str(e)
+        )
+        return error_response("Internal server error", status_code=500)
+
+
+@app.get("/customers/{customer_id}/accounts/{account_id}")
+def get_customer_account_by_account_id(
+    customer_id: uuid.UUID, account_id: uuid.UUID, db: Session = Depends(get_db)
+):
+    try:
+        customer = db.query(Customer).filter(Customer.id == str(customer_id)).first()
+        if not customer:
+            return error_response(message="Customer not found", status_code=404)
+
+        account = db.query(Account).filter(Account.id == str(account_id)).first()
+        if not account:
+            return error_response("Account doesn't exist", status_code=404)
+
+        # checking if the account being accessed even belongs to this customer or not
+        if account.customer_id != str(customer_id):
+            return error_response(
+                "Invalid account - try changing the account ID", status_code=404
+            )
+
+        return success_response(
+            data={
+                "account_id": account.id,
+                "account_number": account.account_number,
+                "balance": float(account.balance),
+                "account_type": account.account_type,
+                "status": account.status.value,
+            },
+            message="Customer account details fetched successfully",
+            status_code=200,
+        )
+    except Exception as e:
+        log_error(
+            "get_customer_account_by_account_id failed",
+            customer_id=str(customer_id),
+            error=str(e),
         )
         return error_response("Internal server error", status_code=500)
 
