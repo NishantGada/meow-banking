@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 # local imports
 from apis.helper_functions.response import success_response, error_response
-from apis.schemas import CustomerCreate
+from apis.schemas import CustomerCreate, CustomerUpdate
 from config.dbconfig import get_db
 from main import app
 from models.customer import Customer
@@ -23,6 +23,25 @@ def get_customer_by_customer_id(customer_id: str, db: Session = Depends(get_db))
     )
 
 
+@app.get("/customers")
+def get_all_customers(db: Session = Depends(get_db)):
+    customers = db.query(Customer).all()
+    return success_response(
+        data=[
+            {
+                "id": customer.id,
+                "email": customer.email,
+                "password": customer.password,
+                "created_at": str(customer.created_at),
+                "updated_at": str(customer.updated_at),
+            }
+            for customer in customers
+        ],
+        message="All customers fetched successfully",
+        status_code=200,
+    )
+
+
 @app.post("/customers")
 def create_new_customer(customer: CustomerCreate, db: Session = Depends(get_db)):
     existing = db.query(Customer).filter(Customer.email == customer.email).first()
@@ -38,4 +57,37 @@ def create_new_customer(customer: CustomerCreate, db: Session = Depends(get_db))
         data={"id": new_customer.id, "email": new_customer.email},
         message="Customer created successfully",
         status_code=201,
+    )
+
+
+@app.put("/customers/{customer_id}")
+def update_customer(
+    customer_id: str, customer_data: CustomerUpdate, db: Session = Depends(get_db)
+):
+    print("customer_data: ", customer_data)
+    if customer_data.email == None and customer_data.password == None:
+        return error_response("Invalid request body", status_code=404)
+
+    customer = db.query(Customer).filter(Customer.id == customer_id).first()
+    if not customer:
+        return error_response("Customer not found", status_code=404)
+
+    if customer_data.email:
+        existing = (
+            db.query(Customer)
+            .filter(Customer.email == customer_data.email, Customer.id != customer_id)
+            .first()
+        )
+        if existing:
+            return error_response("Email already exists", status_code=409)
+        customer.email = customer_data.email
+
+    if customer_data.password:
+        customer.password = customer_data.password
+
+    db.commit()
+
+    return success_response(
+        data={"id": customer.id, "email": customer.email},
+        message="Customer updated successfully",
     )

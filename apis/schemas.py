@@ -6,6 +6,11 @@ class CustomerCreate(BaseModel):
     password: str
 
 
+class CustomerUpdate(BaseModel):
+    email: str | None = None
+    password: str | None = None
+
+
 class AccountCreate(BaseModel):
     customer_id: str
     initial_deposit: float
