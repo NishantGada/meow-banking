@@ -6,6 +6,7 @@ from apis.helper_functions.response import success_response, error_response
 from apis.schemas import CustomerCreate, CustomerUpdate
 from config.dbconfig import get_db
 from main import app
+from models.account import Account
 from models.customer import Customer
 
 
@@ -26,17 +27,23 @@ def get_customer_by_customer_id(customer_id: str, db: Session = Depends(get_db))
 @app.get("/customers")
 def get_all_customers(db: Session = Depends(get_db)):
     customers = db.query(Customer).all()
+
+    all_customers = [
+        {
+            "id": customer.id,
+            "email": customer.email,
+            "password": customer.password,
+            "created_at": str(customer.created_at),
+            "updated_at": str(customer.updated_at),
+        }
+        for customer in customers
+    ]
+
     return success_response(
-        data=[
-            {
-                "id": customer.id,
-                "email": customer.email,
-                "password": customer.password,
-                "created_at": str(customer.created_at),
-                "updated_at": str(customer.updated_at),
-            }
-            for customer in customers
-        ],
+        data={
+            "number_of_customers": len(all_customers),
+            "all_customers": all_customers,
+        },
         message="All customers fetched successfully",
         status_code=200,
     )
@@ -91,3 +98,22 @@ def update_customer(
         data={"id": customer.id, "email": customer.email},
         message="Customer updated successfully",
     )
+
+
+@app.delete("/customers/{customer_id}")
+def delete_customer(customer_id: str, db: Session = Depends(get_db)):
+    customer = db.query(Customer).filter(Customer.id == customer_id).first()
+    if not customer:
+        return error_response("Customer not found", status_code=404)
+
+    # Checking if the customer has any accounts
+    accounts = db.query(Account).filter(Account.customer_id == customer_id).first()
+    if accounts:
+        return error_response(
+            "Cannnot delete customer with existing accounts", status_code=400
+        )
+
+    db.delete(customer)
+    db.commit()
+
+    return success_response(data=None, message="Customer deleted successfully")
