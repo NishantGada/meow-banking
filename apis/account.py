@@ -8,7 +8,7 @@ from apis.schemas import AccountCreate, AccountUpdate
 from apis.transfer import deposit_money
 from config.dbconfig import get_db
 from main import app
-from models.account import Account
+from models.account import Account, AccountStatusEnum
 from models.customer import Customer
 from models.transaction import AccountTransactions
 
@@ -51,6 +51,7 @@ def get_account_by_account_id(account_id: str, db: Session = Depends(get_db)):
             "account_number": account.account_number,
             "balance": float(account.balance),
             "account_type": account.account_type,
+            "status": account.status,
         },
         message="Successfully fetched all customer accounts",
         status_code=200,
@@ -162,4 +163,50 @@ def update_account(
     return success_response(
         data={"account_id": account.id, "account_type": account.account_type},
         message="Account updated successfully",
+    )
+
+
+@app.put("/accounts/{account_id}/close")
+def close_account(account_id: str, db: Session = Depends(get_db)):
+    account = db.query(Account).filter(Account.id == account_id).first()
+    if not account:
+        return error_response("Account not found", status_code=404)
+
+    if account.status == AccountStatusEnum.CLOSED.value:
+        return error_response("Account already closed", status_code=400)
+
+    if account.balance != 0:
+        return error_response(
+            "Cannot close account with non-zero balance", status_code=400
+        )
+
+    account.status = AccountStatusEnum.CLOSED.value
+    db.commit()
+
+    return success_response(
+        data={"account_id": account.id, "status": account.status},
+        message="Account closed successfully",
+    )
+
+
+@app.put("/accounts/{account_id}/reactivate")
+def reactivate_account(account_id: str, db: Session = Depends(get_db)):
+    account = db.query(Account).filter(Account.id == account_id).first()
+    if not account:
+        return error_response("Account not found", status_code=404)
+
+    if account.status == AccountStatusEnum.ACTIVE.value:
+        return error_response("Account already active", status_code=400)
+
+    if account.balance != 0:
+        return error_response(
+            "Cannot re-activate account with non-zero balance", status_code=400
+        )
+
+    account.status = AccountStatusEnum.ACTIVE.value
+    db.commit()
+
+    return success_response(
+        data={"account_id": account.id, "status": account.status},
+        message="Account re-activated successfully",
     )
