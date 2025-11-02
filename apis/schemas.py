@@ -1,5 +1,5 @@
 import uuid
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from uuid import UUID
 
 
@@ -28,7 +28,7 @@ class AccountUpdate(BaseModel):
 class TransferCreate(BaseModel):
     from_account_id: str
     to_account_id: str
-    amount: float
+    amount: float = Field(gt=0)
 
 
 class PasswordUpdate(BaseModel):
@@ -43,11 +43,11 @@ class WithdrawSchema(BaseModel):
     # user_id: UUID
     user_id: str
     account_id: str
-    amount: float
+    amount: float = Field(gt=0)
 
 
 class DepositSchema(BaseModel):
     # user_id: UUID
     user_id: str
     account_id: str
-    amount: float
+    amount: float = Field(gt=0)
