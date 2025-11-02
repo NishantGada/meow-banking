@@ -1,5 +1,6 @@
 from fastapi import Depends
 from sqlalchemy.orm import Session
+import uuid
 
 # local imports
 from apis.helper_functions.generate_account_number import generate_account_number
@@ -8,77 +9,81 @@ from apis.helper_functions.validate_account_status import validate_account_statu
 from apis.schemas import AccountCreate, AccountUpdate
 from apis.transfer import deposit_money
 from config.dbconfig import get_db
+from config.logging_config import log_error
 from main import app
 from models.account import Account, AccountStatusEnum
 from models.customer import Customer
 from models.transaction import AccountTransactions
 
-"""
-@app.get("/accounts/{customer_id}")
-def get_all_customer_accounts(customer_id: str, db: Session = Depends(get_db)):
-    accounts = db.query(Account).filter(Account.customer_id == customer_id).all()
 
-    if not accounts:
-        return success_response(
-            data=[], message="No accounts to fetch", status_code=200
+@app.get("/accounts/{customer_id}/all")
+def get_all_customer_accounts(customer_id: uuid.UUID, db: Session = Depends(get_db)):
+    try:
+        customer = db.query(Customer).filter(Customer.id == str(customer_id)).first()
+        if not customer:
+            return error_response(message="Customer doesn't exist", status_code=404)
+
+        accounts = (
+            db.query(Account).filter(Account.customer_id == str(customer_id)).all()
         )
 
-    return success_response(
-        data=[
+        if not accounts:
+            return success_response(
+                data=[], message="No accounts to fetch", status_code=200
+            )
+
+        all_customer_accounts = [
             {
-                "account_id": acc.id,
-                "account_number": acc.account_number,
-                "balance": float(acc.balance),
-                "account_type": acc.account_type,
+                "account_id": account.id,
+                "account_number": account.account_number,
+                "balance": float(account.balance),
+                "account_type": account.account_type,
+                "created_at": str(account.created_at),
             }
-            for acc in accounts
-        ],
-        message="Successfully fetched all customer accounts",
-        status_code=200,
-    )
-"""
+            for account in accounts
+        ]
+
+        return success_response(
+            data={
+                "number_of_accounts": len(all_customer_accounts),
+                "all_customer_accounts": all_customer_accounts,
+            },
+            message="Successfully fetched all customer accounts",
+            status_code=200,
+        )
+    except Exception as e:
+        log_error(
+            "get_all_customer_accounts failed",
+            customer_id=str(customer_id),
+            error=str(e),
+        )
+        return error_response("Internal server error", status_code=500)
 
 
 @app.get("/accounts/{account_id}")
-def get_account_by_account_id(account_id: str, db: Session = Depends(get_db)):
-    account = db.query(Account).filter(Account.id == account_id).first()
+def get_account_by_account_id(account_id: uuid.UUID, db: Session = Depends(get_db)):
+    try:
+        account = db.query(Account).filter(Account.id == str(account_id)).first()
 
-    if not account:
-        return error_response(data=[], message="Account not found", status_code=404)
+        if not account:
+            return error_response(message="Account not found", status_code=404)
 
-    return success_response(
-        data={
-            "account_id": account.id,
-            "account_number": account.account_number,
-            "balance": float(account.balance),
-            "account_type": account.account_type,
-            "status": account.status.value,
-        },
-        message="Successfully fetched all customer accounts",
-        status_code=200,
-    )
-
-
-"""
-@app.get("/accounts/{customer_id}/{account_id}")
-def get_customer_account_by_account_id(
-    customer_id: str, account_id: str, db: Session = Depends(get_db)
-):
-    account = (
-        db.query(Account)
-        .filter(Account.id == account_id, Account.customer_id == customer_id)
-        .first()
-    )
-
-    if not account:
-        return error_response(
-            message="Account not found, re-check account ID", status_code=404
+        return success_response(
+            data={
+                "account_id": account.id,
+                "account_number": account.account_number,
+                "balance": float(account.balance),
+                "account_type": account.account_type,
+                "status": account.status.value,
+            },
+            message="Successfully fetched all customer accounts",
+            status_code=200,
         )
-
-    return success_response(
-        data=account, message="Account details fetched successfully", status_code=200
-    )
-"""
+    except Exception as e:
+        log_error(
+            "get_account_by_account_id failed", account_id=str(account_id), error=str(e)
+        )
+        return error_response("Internal server error", status_code=500)
 
 
 @app.post("/accounts")
