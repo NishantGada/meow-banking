@@ -7,6 +7,9 @@ class CustomerCreate(BaseModel):
     email: str
     password: str
 
+    class Config:
+        extra = "forbid"
+
 
 class CustomerUpdate(BaseModel):
     email: str | None = None
