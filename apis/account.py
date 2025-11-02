@@ -52,7 +52,7 @@ def get_account_by_account_id(account_id: str, db: Session = Depends(get_db)):
             "account_number": account.account_number,
             "balance": float(account.balance),
             "account_type": account.account_type,
-            "status": account.status,
+            "status": account.status.value,
         },
         message="Successfully fetched all customer accounts",
         status_code=200,
