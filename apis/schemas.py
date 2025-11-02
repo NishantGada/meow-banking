@@ -17,6 +17,10 @@ class AccountCreate(BaseModel):
     account_type: str = "checking"
 
 
+class AccountUpdate(BaseModel):
+    account_type: str | None = None
+
+
 class TransferCreate(BaseModel):
     from_account_id: str
     to_account_id: str
