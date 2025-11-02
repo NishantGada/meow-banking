@@ -4,7 +4,7 @@ from decimal import Decimal
 
 # local imports
 from apis.helper_functions.account_helpers import validate_account_status
-from config.logging_config import log_info
+from config.logging_config import log_error, log_info
 from main import app
 from apis.helper_functions.response import error_response, success_response
 from apis.schemas import DepositSchema, TransferCreate, WithdrawSchema
@@ -14,7 +14,7 @@ from models.transaction import AccountTransactions, TransactionTypeEnum
 
 
 def deposit_money(account_id, amount, db, description=""):
-    log_info(f"deposit_money:: depositing money for {account_id}", amount=amount)
+    log_info(f"deposit_money:: depositing money for {account_id}", amount=float(amount))
     transaction = AccountTransactions(
         account_id=account_id,
         transaction_type="deposit",
@@ -26,7 +26,9 @@ def deposit_money(account_id, amount, db, description=""):
 
 
 def withdraw_money(account_id, amount, db):
-    log_info(f"withdraw_money:: withdrawing money for {account_id}", amount=amount)
+    log_info(
+        f"withdraw_money:: withdrawing money for {account_id}", amount=float(amount)
+    )
     transaction = AccountTransactions(
         account_id=account_id,
         transaction_type="withdraw",
@@ -108,46 +110,70 @@ def transfer(transfer: TransferCreate, db: Session = Depends(get_db)):
 
 @app.post("/withdraw")
 def withdraw(request_body: WithdrawSchema, db: Session = Depends(get_db)):
-    account = db.query(Account).filter(Account.id == request_body.account_id).first()
-    withdrawal_amount = Decimal(str(request_body.amount))
+    try:
+        account = (
+            db.query(Account).filter(Account.id == request_body.account_id).first()
+        )
+        withdrawal_amount = Decimal(str(request_body.amount))
 
-    if account.customer_id != request_body.user_id:
-        return error_response("Incorrect account", status_code=400)
+        if account.customer_id != request_body.user_id:
+            return error_response("Incorrect account", status_code=400)
 
-    if withdrawal_amount <= 0:
-        return error_response("Incorrect amount value", status_code=400)
+        if withdrawal_amount <= 0:
+            return error_response("Incorrect amount value", status_code=400)
 
-    if withdrawal_amount > account.balance:
-        return error_response("Insufficient balance", status_code=400)
+        if withdrawal_amount > account.balance:
+            return error_response("Insufficient balance", status_code=400)
 
-    account.balance -= withdrawal_amount
+        account.balance -= withdrawal_amount
 
-    withdraw_money(request_body.account_id, withdrawal_amount, db)
+        withdraw_money(request_body.account_id, withdrawal_amount, db)
 
-    return success_response(
-        data={"current_balance": float(account.balance)},
-        message="Wuithdrawal successful",
-        status_code=200,
-    )
+        return success_response(
+            data={"current_balance": float(account.balance)},
+            message="Withdrawal successful",
+            status_code=200,
+        )
+    except Exception as e:
+        db.rollback()
+        log_error(
+            "withdraw failed",
+            customer_id=request_body.user_id,
+            account_id=str(request_body.account_id),
+            error=str(e),
+        )
+        return error_response("Internal server error", status_code=500)
 
 
 @app.post("/deposit")
 def deposit(request_body: DepositSchema, db: Session = Depends(get_db)):
-    account = db.query(Account).filter(Account.id == request_body.account_id).first()
-    deposit_amount = Decimal(str(request_body.amount))
+    try:
+        account = (
+            db.query(Account).filter(Account.id == request_body.account_id).first()
+        )
+        deposit_amount = Decimal(str(request_body.amount))
 
-    if account.customer_id != request_body.user_id:
-        return error_response("Incorrect account", status_code=400)
+        if account.customer_id != request_body.user_id:
+            return error_response("Incorrect account", status_code=400)
 
-    if deposit_amount <= 0:
-        return error_response("Incorrect amount value", status_code=400)
+        if deposit_amount <= 0:
+            return error_response("Incorrect amount value", status_code=400)
 
-    account.balance += deposit_amount
+        account.balance += deposit_amount
 
-    deposit_money(request_body.account_id, deposit_amount, db)
+        deposit_money(request_body.account_id, deposit_amount, db)
 
-    return success_response(
-        data={"current_balance": float(account.balance)},
-        message="Deposit successful",
-        status_code=200,
-    )
+        return success_response(
+            data={"current_balance": float(account.balance)},
+            message="Deposit successful",
+            status_code=200,
+        )
+    except Exception as e:
+        db.rollback()
+        log_error(
+            "withdraw failed",
+            customer_id=request_body.user_id,
+            account_id=str(request_body.account_id),
+            error=str(e),
+        )
+        return error_response("Internal server error", status_code=500)
