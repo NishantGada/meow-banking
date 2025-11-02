@@ -129,7 +129,7 @@ def get_account_transactions(account_id: str, db: Session = Depends(get_db)):
     history = [
         {
             "id": transaction.id,
-            "transaction_type": transaction.transaction_type,
+            "transaction_type": transaction.transaction_type.value,
             "amount": float(transaction.amount),
             "description": transaction.description,
             "created_at": str(transaction.created_at),
