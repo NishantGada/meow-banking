@@ -4,6 +4,7 @@ from decimal import Decimal
 
 # local imports
 from apis.helper_functions.validate_account_status import validate_account_status
+from config.logging_config import log_info
 from main import app
 from apis.helper_functions.response import error_response, success_response
 from apis.schemas import DepositSchema, TransferCreate, WithdrawSchema
@@ -13,6 +14,7 @@ from models.transaction import AccountTransactions, TransactionTypeEnum
 
 
 def deposit_money(account_id, amount, db, description=""):
+    log_info(f"deposit_money:: depositing money for {account_id}", amount=amount)
     transaction = AccountTransactions(
         account_id=account_id,
         transaction_type="deposit",
@@ -24,6 +26,7 @@ def deposit_money(account_id, amount, db, description=""):
 
 
 def withdraw_money(account_id, amount, db):
+    log_info(f"withdraw_money:: withdrawing money for {account_id}", amount=amount)
     transaction = AccountTransactions(
         account_id=account_id,
         transaction_type="withdraw",
