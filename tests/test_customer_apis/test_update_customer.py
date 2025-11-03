@@ -50,8 +50,9 @@ def test_update_customer_empty_email(client):
 
     response = client.put(f"/customers/{customer_id}", json={"email": ""})
 
-    assert response.status_code == 400
-    assert response.json()["message"] == "Invalid request body"
+    assert response.status_code == 422
+    assert "detail" in response.json()
+    assert response.json()["detail"][0]["type"] == "value_error"
 
 
 def test_update_customer_duplicate_email(client):
