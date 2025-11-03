@@ -45,3 +45,22 @@ def test_create_customer_invalid_request_field(client):
     assert "detail" in response.json()
     assert response.json()["detail"][0]["type"] == "extra_forbidden"
 
+
+def test_create_customer_invalid_email(client):
+    invalid_email_values = [
+        "testexample.com",
+        "@gmail.com",
+        "test@example",
+        "test@example.",
+        "12345",
+    ]
+
+    for invalid_email in invalid_email_values:
+        response = client.post(
+            "/customers",
+            json={"email": invalid_email, "password": "testpass123"},
+        )
+
+        assert response.status_code == 422
+        assert "detail" in response.json()
+        assert response.json()["detail"][0]["type"] == "value_error"
