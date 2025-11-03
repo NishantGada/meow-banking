@@ -20,7 +20,7 @@ def deposit_money(account_id, amount, db, description=""):
     log_info(f"deposit_money:: depositing money for {account_id}", amount=float(amount))
     transaction = AccountTransactions(
         account_id=account_id,
-        transaction_type="deposit",
+        transaction_type=TransactionTypeEnum.DEPOSIT,
         amount=amount,
         description=description,
     )
@@ -34,7 +34,7 @@ def withdraw_money(account_id, amount, db):
     )
     transaction = AccountTransactions(
         account_id=account_id,
-        transaction_type="withdraw",
+        transaction_type=TransactionTypeEnum.WITHDRAW,
         amount=-amount,
     )
     db.add(transaction)
@@ -81,7 +81,7 @@ def transfer(transfer: TransferCreate, db: Session = Depends(get_db)):
 
         from_account = db.query(Account).filter(Account.id == source_account).first()
         if not from_account:
-            return error_response("Source acount not found", status_code=404)
+            return error_response("Source account not found", status_code=404)
 
         error = validate_account_status(from_account)
         if error:
@@ -89,7 +89,7 @@ def transfer(transfer: TransferCreate, db: Session = Depends(get_db)):
 
         to_account = db.query(Account).filter(Account.id == destination_account).first()
         if not to_account:
-            return error_response("Destination acount not found", status_code=404)
+            return error_response("Destination account not found", status_code=404)
 
         error = validate_account_status(to_account)
         if error:
@@ -128,13 +128,14 @@ def withdraw(request_body: WithdrawSchema, db: Session = Depends(get_db)):
         if error:
             return error
 
+        error = validate_account_status(account)
+        if error:
+            return error
+
         withdrawal_amount = Decimal(str(request_body.amount))
 
         if account.customer_id != str(request_body.user_id):
             return error_response("Incorrect account", status_code=400)
-
-        if withdrawal_amount <= 0:
-            return error_response("Incorrect amount value", status_code=400)
 
         if withdrawal_amount > account.balance:
             return error_response("Insufficient balance", status_code=400)
@@ -164,6 +165,10 @@ def deposit(request_body: DepositSchema, db: Session = Depends(get_db)):
     try:
         deposit_account = str(request_body.account_id)
         account, error = check_if_account_exists(deposit_account, db)
+        if error:
+            return error
+
+        error = validate_account_status(account)
         if error:
             return error
 

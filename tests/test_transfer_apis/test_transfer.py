@@ -48,7 +48,7 @@ def test_transfer_source_account_not_found(client):
 
     assert response.status_code == 404
     assert response.json()["success"] == False
-    assert response.json()["message"] == "Source acount not found"
+    assert response.json()["message"] == "Source account not found"
 
 
 def test_transfer_destination_account_not_found(client):
@@ -68,7 +68,7 @@ def test_transfer_destination_account_not_found(client):
 
     assert response.status_code == 404
     assert response.json()["success"] == False
-    assert response.json()["message"] == "Destination acount not found"
+    assert response.json()["message"] == "Destination account not found"
 
 
 def test_transfer_from_closed_account(client):
