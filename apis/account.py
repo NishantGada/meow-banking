@@ -94,7 +94,7 @@ def create_account(account: AccountCreate, db: Session = Depends(get_db)):
 
         new_account = Account(
             account_number=generate_account_number(),
-            customer_id=account.customer_id,
+            customer_id=str(account.customer_id),
             balance=account.initial_deposit,
             account_type=account.account_type,
         )
@@ -160,7 +160,6 @@ def get_account_transactions(account_id: uuid.UUID, db: Session = Depends(get_db
             message="Transaction history fetched successfully",
         )
     except Exception as e:
-        db.rollback()
         log_error(
             "get_account_transactions failed", account_id=str(account_id), error=str(e)
         )
