@@ -14,6 +14,11 @@ class AccountStatusEnum(enum.Enum):
     CLOSED = "closed"
 
 
+class AccountTypeEnum(str, enum.Enum):
+    CHECKING = "checking"
+    SAVINGS = "savings"
+
+
 class Account(Base):
     __tablename__ = "accounts"
 
