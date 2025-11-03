@@ -76,9 +76,10 @@ def transfer_money(from_account_id, to_account_id, amount, db):
 @app.post("/transfer")
 def transfer(transfer: TransferCreate, db: Session = Depends(get_db)):
     try:
-        from_account = (
-            db.query(Account).filter(Account.id == transfer.from_account_id).first()
-        )
+        source_account = str(transfer.from_account_id)
+        destination_account = str(transfer.to_account_id)
+
+        from_account = db.query(Account).filter(Account.id == source_account).first()
         if not from_account:
             return error_response("Source acount not found", status_code=404)
 
@@ -86,9 +87,7 @@ def transfer(transfer: TransferCreate, db: Session = Depends(get_db)):
         if error:
             return error
 
-        to_account = (
-            db.query(Account).filter(Account.id == transfer.to_account_id).first()
-        )
+        to_account = db.query(Account).filter(Account.id == destination_account).first()
         if not to_account:
             return error_response("Destination acount not found", status_code=404)
 
@@ -99,14 +98,12 @@ def transfer(transfer: TransferCreate, db: Session = Depends(get_db)):
         if from_account.balance < transfer.amount:
             return error_response("Insufficient balance", status_code=400)
 
-        transfer_money(
-            transfer.from_account_id, transfer.to_account_id, transfer.amount, db
-        )
+        transfer_money(source_account, destination_account, transfer.amount, db)
 
         return success_response(
             data={
-                "from_account": transfer.from_account_id,
-                "to_account": transfer.to_account_id,
+                "from_account": source_account,
+                "to_account": destination_account,
                 "amount": transfer.amount,
             },
             message="Transfer successful",
@@ -116,8 +113,8 @@ def transfer(transfer: TransferCreate, db: Session = Depends(get_db)):
         db.rollback()
         log_error(
             "transfer failed",
-            from_account_id=transfer.from_account_id,
-            to_account_id=transfer.to_account_id,
+            from_account_id=source_account,
+            to_account_id=destination_account,
             error=str(e),
         )
         return error_response("Internal server error", status_code=500)
@@ -126,13 +123,14 @@ def transfer(transfer: TransferCreate, db: Session = Depends(get_db)):
 @app.post("/withdraw")
 def withdraw(request_body: WithdrawSchema, db: Session = Depends(get_db)):
     try:
-        account, error = check_if_account_exists(request_body.account_id, db)
+        withdrawal_account = str(request_body.account_id)
+        account, error = check_if_account_exists(withdrawal_account, db)
         if error:
             return error
 
         withdrawal_amount = Decimal(str(request_body.amount))
 
-        if account.customer_id != request_body.user_id:
+        if account.customer_id != str(request_body.user_id):
             return error_response("Incorrect account", status_code=400)
 
         if withdrawal_amount <= 0:
@@ -155,7 +153,7 @@ def withdraw(request_body: WithdrawSchema, db: Session = Depends(get_db)):
         log_error(
             "withdraw failed",
             customer_id=request_body.user_id,
-            account_id=str(request_body.account_id),
+            account_id=withdrawal_account,
             error=str(e),
         )
         return error_response("Internal server error", status_code=500)
@@ -164,13 +162,14 @@ def withdraw(request_body: WithdrawSchema, db: Session = Depends(get_db)):
 @app.post("/deposit")
 def deposit(request_body: DepositSchema, db: Session = Depends(get_db)):
     try:
-        account, error = check_if_account_exists(request_body.account_id, db)
+        deposit_account = str(request_body.account_id)
+        account, error = check_if_account_exists(deposit_account, db)
         if error:
             return error
 
         deposit_amount = Decimal(str(request_body.amount))
 
-        if account.customer_id != request_body.user_id:
+        if account.customer_id != str(request_body.user_id):
             return error_response("Incorrect account", status_code=400)
 
         if deposit_amount <= 0:
@@ -190,7 +189,7 @@ def deposit(request_body: DepositSchema, db: Session = Depends(get_db)):
         log_error(
             "deposit failed",
             customer_id=request_body.user_id,
-            account_id=str(request_body.account_id),
+            account_id=deposit_account,
             error=str(e),
         )
         return error_response("Internal server error", status_code=500)
