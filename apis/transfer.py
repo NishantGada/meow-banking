@@ -3,7 +3,10 @@ from sqlalchemy.orm import Session
 from decimal import Decimal
 
 # local imports
-from apis.helper_functions.account_helpers import validate_account_status
+from apis.helper_functions.account_helpers import (
+    check_if_account_exists,
+    validate_account_status,
+)
 from config.logging_config import log_error, log_info
 from main import app
 from apis.helper_functions.response import error_response, success_response
@@ -111,9 +114,10 @@ def transfer(transfer: TransferCreate, db: Session = Depends(get_db)):
 @app.post("/withdraw")
 def withdraw(request_body: WithdrawSchema, db: Session = Depends(get_db)):
     try:
-        account = (
-            db.query(Account).filter(Account.id == request_body.account_id).first()
-        )
+        account, error = check_if_account_exists(request_body.account_id, db)
+        if error:
+            return error
+
         withdrawal_amount = Decimal(str(request_body.amount))
 
         if account.customer_id != request_body.user_id:
@@ -148,9 +152,10 @@ def withdraw(request_body: WithdrawSchema, db: Session = Depends(get_db)):
 @app.post("/deposit")
 def deposit(request_body: DepositSchema, db: Session = Depends(get_db)):
     try:
-        account = (
-            db.query(Account).filter(Account.id == request_body.account_id).first()
-        )
+        account, error = check_if_account_exists(request_body.account_id, db)
+        if error:
+            return error
+
         deposit_amount = Decimal(str(request_body.amount))
 
         if account.customer_id != request_body.user_id:
