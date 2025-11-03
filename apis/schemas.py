@@ -17,7 +17,7 @@ class CustomerUpdate(BaseModel):
 
 class AccountCreate(BaseModel):
     customer_id: uuid.UUID
-    initial_deposit: float
+    initial_deposit: float = Field(gt=0)
     account_type: str = "checking"
 
 
