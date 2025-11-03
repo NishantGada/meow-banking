@@ -1,5 +1,5 @@
 import uuid
-from tests.test_transfer_apis.test_helpers import create_customer_with_account
+from tests.test_helpers import create_customer_with_account
 
 
 def test_withdraw_success(client):
