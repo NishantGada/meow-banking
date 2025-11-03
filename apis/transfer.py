@@ -75,40 +75,52 @@ def transfer_money(from_account_id, to_account_id, amount, db):
 
 @app.post("/transfer")
 def transfer(transfer: TransferCreate, db: Session = Depends(get_db)):
-    from_account = (
-        db.query(Account).filter(Account.id == transfer.from_account_id).first()
-    )
-    if not from_account:
-        return error_response("Source acount not found", status_code=404)
+    try:
+        from_account = (
+            db.query(Account).filter(Account.id == transfer.from_account_id).first()
+        )
+        if not from_account:
+            return error_response("Source acount not found", status_code=404)
 
-    error = validate_account_status(from_account)
-    if error:
-        return error
+        error = validate_account_status(from_account)
+        if error:
+            return error
 
-    to_account = db.query(Account).filter(Account.id == transfer.to_account_id).first()
-    if not to_account:
-        return error_response("Destination acount not found", status_code=404)
+        to_account = (
+            db.query(Account).filter(Account.id == transfer.to_account_id).first()
+        )
+        if not to_account:
+            return error_response("Destination acount not found", status_code=404)
 
-    error = validate_account_status(to_account)
-    if error:
-        return error
+        error = validate_account_status(to_account)
+        if error:
+            return error
 
-    if from_account.balance < transfer.amount:
-        return error_response("Insufficient balance", status_code=400)
+        if from_account.balance < transfer.amount:
+            return error_response("Insufficient balance", status_code=400)
 
-    transfer_money(
-        transfer.from_account_id, transfer.to_account_id, transfer.amount, db
-    )
+        transfer_money(
+            transfer.from_account_id, transfer.to_account_id, transfer.amount, db
+        )
 
-    return success_response(
-        data={
-            "from_account": transfer.from_account_id,
-            "to_account": transfer.to_account_id,
-            "amount": transfer.amount,
-        },
-        message="Transfer successful",
-        status_code=200,
-    )
+        return success_response(
+            data={
+                "from_account": transfer.from_account_id,
+                "to_account": transfer.to_account_id,
+                "amount": transfer.amount,
+            },
+            message="Transfer successful",
+            status_code=200,
+        )
+    except Exception as e:
+        db.rollback()
+        log_error(
+            "transfer failed",
+            from_account_id=transfer.from_account_id,
+            to_account_id=transfer.to_account_id,
+            error=str(e),
+        )
+        return error_response("Internal server error", status_code=500)
 
 
 @app.post("/withdraw")
@@ -176,7 +188,7 @@ def deposit(request_body: DepositSchema, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         log_error(
-            "withdraw failed",
+            "deposit failed",
             customer_id=request_body.user_id,
             account_id=str(request_body.account_id),
             error=str(e),
