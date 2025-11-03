@@ -14,7 +14,7 @@ from models.account import Account
 from models.customer import Customer
 
 
-@app.get("/customers/{customer_id}")
+@app.get("/customers/{customer_id}", tags=["Customers"])
 def get_customer_by_customer_id(customer_id: uuid.UUID, db: Session = Depends(get_db)):
     try:
         customer, error = check_if_customer_exists(str(customer_id), db)
@@ -39,7 +39,7 @@ def get_customer_by_customer_id(customer_id: uuid.UUID, db: Session = Depends(ge
         return error_response("Internal server error", status_code=500)
 
 
-@app.get("/customers/{customer_id}/accounts/{account_id}")
+@app.get("/customers/{customer_id}/accounts/{account_id}", tags=["Customers"])
 def get_customer_account_by_account_id(
     customer_id: uuid.UUID, account_id: uuid.UUID, db: Session = Depends(get_db)
 ):
@@ -78,7 +78,7 @@ def get_customer_account_by_account_id(
         return error_response("Internal server error", status_code=500)
 
 
-@app.get("/customers")
+@app.get("/customers", tags=["Customers"])
 def get_all_customers(db: Session = Depends(get_db)):
     try:
         customers = db.query(Customer).all()
@@ -106,7 +106,7 @@ def get_all_customers(db: Session = Depends(get_db)):
         return error_response("Internal server error", status_code=500)
 
 
-@app.post("/customers")
+@app.post("/customers", tags=["Customers"])
 def create_new_customer(customer: CustomerCreate, db: Session = Depends(get_db)):
     try:
         existing = db.query(Customer).filter(Customer.email == customer.email).first()
@@ -132,7 +132,7 @@ def create_new_customer(customer: CustomerCreate, db: Session = Depends(get_db))
         return error_response("Failed to create customer", status_code=500)
 
 
-@app.put("/customers/{customer_id}")
+@app.put("/customers/{customer_id}", tags=["Customers"])
 def update_customer(
     customer_id: uuid.UUID, request_body: CustomerUpdate, db: Session = Depends(get_db)
 ):
@@ -166,7 +166,7 @@ def update_customer(
         return error_response("Internal server error", status_code=500)
 
 
-@app.put("/customers/{customer_id}/password")
+@app.put("/customers/{customer_id}/password", tags=["Customers"])
 def update_customer_password(
     customer_id: uuid.UUID, request_body: PasswordUpdate, db: Session = Depends(get_db)
 ):
@@ -195,7 +195,7 @@ def update_customer_password(
         return error_response("Internal server error", status_code=500)
 
 
-@app.delete("/customers/{customer_id}")
+@app.delete("/customers/{customer_id}", tags=["Customers"])
 def delete_customer(customer_id: uuid.UUID, db: Session = Depends(get_db)):
     try:
         customer, error = check_if_customer_exists(str(customer_id), db)

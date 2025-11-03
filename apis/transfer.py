@@ -73,7 +73,7 @@ def transfer_money(from_account_id, to_account_id, amount, db):
     db.commit()
 
 
-@app.post("/transfer")
+@app.post("/transfer", tags=["Transactions"])
 def transfer(transfer: TransferCreate, db: Session = Depends(get_db)):
     try:
         source_account = str(transfer.from_account_id)
@@ -120,7 +120,7 @@ def transfer(transfer: TransferCreate, db: Session = Depends(get_db)):
         return error_response("Internal server error", status_code=500)
 
 
-@app.post("/withdraw")
+@app.post("/withdraw", tags=["Transactions"])
 def withdraw(request_body: WithdrawSchema, db: Session = Depends(get_db)):
     try:
         withdrawal_account = str(request_body.account_id)
@@ -160,7 +160,7 @@ def withdraw(request_body: WithdrawSchema, db: Session = Depends(get_db)):
         return error_response("Internal server error", status_code=500)
 
 
-@app.post("/deposit")
+@app.post("/deposit", tags=["Transactions"])
 def deposit(request_body: DepositSchema, db: Session = Depends(get_db)):
     try:
         deposit_account = str(request_body.account_id)

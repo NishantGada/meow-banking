@@ -16,7 +16,7 @@ from models.customer import Customer
 from models.transaction import AccountTransactions
 
 
-@app.get("/accounts/{customer_id}/all")
+@app.get("/accounts/{customer_id}/all", tags=["Accounts"])
 def get_all_customer_accounts(customer_id: uuid.UUID, db: Session = Depends(get_db)):
     try:
         customer, error = check_if_customer_exists(str(customer_id), db)
@@ -60,7 +60,7 @@ def get_all_customer_accounts(customer_id: uuid.UUID, db: Session = Depends(get_
         return error_response("Internal server error", status_code=500)
 
 
-@app.get("/accounts/{account_id}")
+@app.get("/accounts/{account_id}", tags=["Accounts"])
 def get_account_by_account_id(account_id: uuid.UUID, db: Session = Depends(get_db)):
     try:
         account, error = check_if_account_exists(str(account_id), db)
@@ -85,7 +85,7 @@ def get_account_by_account_id(account_id: uuid.UUID, db: Session = Depends(get_d
         return error_response("Internal server error", status_code=500)
 
 
-@app.post("/accounts")
+@app.post("/accounts", tags=["Accounts"])
 def create_account(account: AccountCreate, db: Session = Depends(get_db)):
     try:
         customer, error = check_if_customer_exists(str(account.customer_id), db)
@@ -122,7 +122,7 @@ def create_account(account: AccountCreate, db: Session = Depends(get_db)):
         return error_response("Internal server error", status_code=500)
 
 
-@app.get("/accounts/{account_id}/transactions")
+@app.get("/accounts/{account_id}/transactions", tags=["Transactions"])
 def get_account_transactions(account_id: uuid.UUID, db: Session = Depends(get_db)):
     try:
         account, error = check_if_account_exists(str(account_id), db)
@@ -166,7 +166,7 @@ def get_account_transactions(account_id: uuid.UUID, db: Session = Depends(get_db
         return error_response("Internal server error", status_code=500)
 
 
-@app.put("/accounts/{account_id}")
+@app.put("/accounts/{account_id}", tags=["Accounts"])
 def update_account(
     account_id: uuid.UUID,
     update_request_body: AccountUpdate,
@@ -203,7 +203,7 @@ def update_account(
         return error_response("Internal server error", status_code=500)
 
 
-@app.put("/accounts/{account_id}/close")
+@app.put("/accounts/{account_id}/close", tags=["Managing Accounts"])
 def close_account(account_id: uuid.UUID, db: Session = Depends(get_db)):
     try:
         account, error = check_if_account_exists(str(account_id), db)
@@ -231,7 +231,7 @@ def close_account(account_id: uuid.UUID, db: Session = Depends(get_db)):
         return error_response("Internal server error", status_code=500)
 
 
-@app.put("/accounts/{account_id}/reactivate")
+@app.put("/accounts/{account_id}/reactivate", tags=["Managing Accounts"])
 def reactivate_account(account_id: uuid.UUID, db: Session = Depends(get_db)):
     try:
         account, error = check_if_account_exists(str(account_id), db)
