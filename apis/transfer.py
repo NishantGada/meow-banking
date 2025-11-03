@@ -117,7 +117,7 @@ def transfer(transfer: TransferCreate, db: Session = Depends(get_db)):
             to_account_id=destination_account,
             error=str(e),
         )
-        return error_response("Internal server error", status_code=500)
+        return error_response(f"Internal server error: {e}", status_code=500)
 
 
 @app.post("/withdraw", tags=["Transactions"])
@@ -157,7 +157,7 @@ def withdraw(request_body: WithdrawSchema, db: Session = Depends(get_db)):
             account_id=withdrawal_account,
             error=str(e),
         )
-        return error_response("Internal server error", status_code=500)
+        return error_response(f"Internal server error: {e}", status_code=500)
 
 
 @app.post("/deposit", tags=["Transactions"])
@@ -197,4 +197,4 @@ def deposit(request_body: DepositSchema, db: Session = Depends(get_db)):
             account_id=deposit_account,
             error=str(e),
         )
-        return error_response("Internal server error", status_code=500)
+        return error_response(f"Internal server error: {e}", status_code=500)

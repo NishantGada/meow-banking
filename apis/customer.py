@@ -36,7 +36,7 @@ def get_customer_by_customer_id(customer_id: uuid.UUID, db: Session = Depends(ge
             customer_id=str(customer_id),
             error=str(e),
         )
-        return error_response("Internal server error", status_code=500)
+        return error_response(f"Internal server error: {e}", status_code=500)
 
 
 @app.get("/customers/{customer_id}/accounts/{account_id}", tags=["Customers"])
@@ -75,7 +75,7 @@ def get_customer_account_by_account_id(
             customer_id=str(customer_id),
             error=str(e),
         )
-        return error_response("Internal server error", status_code=500)
+        return error_response(f"Internal server error: {e}", status_code=500)
 
 
 @app.get("/customers", tags=["Customers"])
@@ -103,7 +103,7 @@ def get_all_customers(db: Session = Depends(get_db)):
         )
     except Exception as e:
         log_error("get_all_customers failed", error=str(e))
-        return error_response("Internal server error", status_code=500)
+        return error_response(f"Internal server error: {e}", status_code=500)
 
 
 @app.post("/customers", tags=["Customers"])
@@ -163,7 +163,7 @@ def update_customer(
     except Exception as e:
         db.rollback()
         log_error("update_customer failed", customer_id=str(customer_id), error=str(e))
-        return error_response("Internal server error", status_code=500)
+        return error_response(f"Internal server error: {e}", status_code=500)
 
 
 @app.put("/customers/{customer_id}/password", tags=["Customers"])
@@ -192,7 +192,7 @@ def update_customer_password(
             customer_id=str(customer_id),
             error=str(e),
         )
-        return error_response("Internal server error", status_code=500)
+        return error_response(f"Internal server error: {e}", status_code=500)
 
 
 @app.delete("/customers/{customer_id}", tags=["Customers"])
@@ -218,4 +218,4 @@ def delete_customer(customer_id: uuid.UUID, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         log_error("delete_customer failed", customer_id=str(customer_id), error=str(e))
-        return error_response("Internal server error", status_code=500)
+        return error_response(f"Internal server error: {e}", status_code=500)

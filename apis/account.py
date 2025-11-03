@@ -57,7 +57,7 @@ def get_all_customer_accounts(customer_id: uuid.UUID, db: Session = Depends(get_
             customer_id=str(customer_id),
             error=str(e),
         )
-        return error_response("Internal server error", status_code=500)
+        return error_response(f"Internal server error: {e}", status_code=500)
 
 
 @app.get("/accounts/{account_id}", tags=["Accounts"])
@@ -82,7 +82,7 @@ def get_account_by_account_id(account_id: uuid.UUID, db: Session = Depends(get_d
         log_error(
             "get_account_by_account_id failed", account_id=str(account_id), error=str(e)
         )
-        return error_response("Internal server error", status_code=500)
+        return error_response(f"Internal server error: {e}", status_code=500)
 
 
 @app.post("/accounts", tags=["Accounts"])
@@ -119,7 +119,7 @@ def create_account(account: AccountCreate, db: Session = Depends(get_db)):
         log_error(
             "create_account failed", customer_id=str(account.customer_id), error=str(e)
         )
-        return error_response("Internal server error", status_code=500)
+        return error_response(f"Internal server error: {e}", status_code=500)
 
 
 @app.get("/accounts/{account_id}/transactions", tags=["Transactions"])
@@ -163,7 +163,7 @@ def get_account_transactions(account_id: uuid.UUID, db: Session = Depends(get_db
         log_error(
             "get_account_transactions failed", account_id=str(account_id), error=str(e)
         )
-        return error_response("Internal server error", status_code=500)
+        return error_response(f"Internal server error: {e}", status_code=500)
 
 
 @app.put("/accounts/{account_id}", tags=["Accounts"])
@@ -200,7 +200,7 @@ def update_account(
     except Exception as e:
         db.rollback()
         log_error("update_account failed", account_id=str(account_id), error=str(e))
-        return error_response("Internal server error", status_code=500)
+        return error_response(f"Internal server error: {e}", status_code=500)
 
 
 @app.put("/accounts/{account_id}/close", tags=["Managing Accounts"])
@@ -228,7 +228,7 @@ def close_account(account_id: uuid.UUID, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         log_error("close_account failed", account_id=str(account_id), error=str(e))
-        return error_response("Internal server error", status_code=500)
+        return error_response(f"Internal server error: {e}", status_code=500)
 
 
 @app.put("/accounts/{account_id}/reactivate", tags=["Managing Accounts"])
@@ -256,4 +256,4 @@ def reactivate_account(account_id: uuid.UUID, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         log_error("reactivate_account failed", account_id=str(account_id), error=str(e))
-        return error_response("Internal server error", status_code=500)
+        return error_response(f"Internal server error: {e}", status_code=500)
