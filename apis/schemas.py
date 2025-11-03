@@ -23,7 +23,7 @@ class CustomerUpdate(BaseModel):
 class AccountCreate(BaseModel):
     customer_id: UUID
     initial_deposit: float = Field(gt=0)
-    account_type: str = "checking"
+    account_type: AccountTypeEnum
 
     class Config:
         extra = "forbid"
