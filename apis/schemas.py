@@ -1,10 +1,10 @@
 import uuid
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 from uuid import UUID
 
 
 class CustomerCreate(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
     class Config:
@@ -12,7 +12,7 @@ class CustomerCreate(BaseModel):
 
 
 class CustomerUpdate(BaseModel):
-    email: str | None = None
+    email: EmailStr | None = None
 
 
 class AccountCreate(BaseModel):
