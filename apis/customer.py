@@ -87,7 +87,6 @@ def get_all_customers(db: Session = Depends(get_db)):
             {
                 "id": customer.id,
                 "email": customer.email,
-                "password": customer.password,
                 "created_at": str(customer.created_at),
                 "updated_at": str(customer.updated_at),
             }
@@ -135,33 +134,31 @@ def create_new_customer(customer: CustomerCreate, db: Session = Depends(get_db))
 
 @app.put("/customers/{customer_id}")
 def update_customer(
-    customer_id: uuid.UUID, customer_data: CustomerUpdate, db: Session = Depends(get_db)
+    customer_id: uuid.UUID, request_body: CustomerUpdate, db: Session = Depends(get_db)
 ):
     try:
-        if not customer_data.email:
-            return error_response("Invalid request body", status_code=400)
-
         customer, error = check_if_customer_exists(str(customer_id), db)
         if error:
             return error
 
-        if customer_data.email:
+        if request_body.email:
             existing = (
                 db.query(Customer)
                 .filter(
-                    Customer.email == customer_data.email, Customer.id != customer_id
+                    Customer.email == request_body.email,
+                    Customer.id != str(customer_id),
                 )
                 .first()
             )
             if existing:
                 return error_response("Email already exists", status_code=409)
-            customer.email = customer_data.email
+            customer.email = request_body.email
 
         db.commit()
 
         return success_response(
             data={"id": customer.id, "email": customer.email},
-            message="Email updated successfully",
+            message="Customer updated successfully",
         )
     except Exception as e:
         db.rollback()
@@ -206,7 +203,9 @@ def delete_customer(customer_id: uuid.UUID, db: Session = Depends(get_db)):
             return error
 
         # Checking if the customer has any accounts
-        accounts = db.query(Account).filter(Account.customer_id == customer_id).first()
+        accounts = (
+            db.query(Account).filter(Account.customer_id == str(customer_id)).first()
+        )
         if accounts:
             return error_response(
                 "Cannnot delete customer with existing accounts", status_code=400

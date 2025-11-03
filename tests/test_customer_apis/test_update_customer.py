@@ -14,7 +14,7 @@ def test_update_customer_success(client):
     assert response.status_code == 200
     assert response.json()["success"] == True
     assert response.json()["data"]["email"] == "new@example.com"
-    assert response.json()["message"] == "Email updated successfully"
+    assert response.json()["message"] == "Customer updated successfully"
 
     # Now verifying if the changed email persists
     get_response = client.get(f"/customers/{customer_id}")
@@ -83,5 +83,6 @@ def test_update_customer_using_same_email(client):
         f"/customers/{customer_id}", json={"email": "test@example.com"}
     )
 
-    assert response.status_code == 409
-    assert response.json()["message"] == "Email already exists"
+    assert response.status_code == 200
+    assert response.json()["success"] == True
+    assert response.json()["data"]["email"] == "test@example.com"

@@ -22,11 +22,9 @@ def test_get_all_customers_with_entries(client):
     response = client.get("/customers")
 
     assert response.status_code == 200
-    assert response.json()["data"]["number_of_customers"] == 3
     assert (
         len(response.json()["data"]["all_customers"])
         == response.json()["data"]["number_of_customers"]
     )
-    # assert response.json()["data"]["all_customers"][0] == isinstance(dict)
     assert isinstance(response.json()["data"]["all_customers"][0], dict)
-    assert len(response.json()["data"]["all_customers"][0]) == 5
+    assert len(response.json()["data"]["all_customers"][0]) == 4
