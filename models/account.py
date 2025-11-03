@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, DECIMAL, ForeignKey, DateTime, Enum
 from sqlalchemy.dialects.mysql import CHAR
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, UTC
 import uuid
 import enum
 
@@ -9,7 +9,7 @@ import enum
 from config.dbconfig import Base
 
 
-class AccountStatusEnum(enum.Enum):
+class AccountStatusEnum(str, enum.Enum):
     ACTIVE = "active"
     CLOSED = "closed"
 
@@ -26,12 +26,15 @@ class Account(Base):
     account_number = Column(String(20), unique=True, nullable=False)
     customer_id = Column(CHAR(36), ForeignKey("customers.id"), nullable=False)
     balance = Column(DECIMAL(15, 2), nullable=False, default=0.00)
-    account_type = Column(String(20), default="checking")
+    account_type = Column(
+        Enum(AccountTypeEnum, values_callable=lambda x: [e.value for e in x]),
+        default=AccountTypeEnum.CHECKING,
+    )
     status = Column(
         Enum(AccountStatusEnum, values_callable=lambda x: [e.value for e in x]),
         default=AccountStatusEnum.ACTIVE,
     )
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
     customer = relationship("Customer", back_populates="accounts")
     transactions = relationship(
