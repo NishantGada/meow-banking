@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Enum, String, DECIMAL, ForeignKey, DateTime
 from sqlalchemy.dialects.mysql import CHAR
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, UTC
 import uuid
 import enum
 
@@ -9,7 +9,7 @@ import enum
 from config.dbconfig import Base
 
 
-class TransactionTypeEnum(enum.Enum):
+class TransactionTypeEnum(str, enum.Enum):
     TRANSFER = "transfer"
     DEPOSIT = "deposit"
     WITHDRAW = "withdraw"
@@ -28,6 +28,6 @@ class AccountTransactions(Base):
     from_account_id = Column(CHAR(36), ForeignKey("accounts.id"), nullable=True)
     to_account_id = Column(CHAR(36), ForeignKey("accounts.id"), nullable=True)
     description = Column(String(200))
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
     account = relationship("Account", foreign_keys=[account_id])
