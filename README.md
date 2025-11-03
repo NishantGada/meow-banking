@@ -72,6 +72,8 @@ Ensure the server is running, then visit:
 
 ## Testing
 
+### Current Test Coverage ~ 91%
+
 ### Run all tests
 ```bash
 pytest
